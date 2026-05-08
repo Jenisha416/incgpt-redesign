@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>INCGPT — AI & Identity Security</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --ink:#0D0D0D;
+  --ink2:#141414;
+  --ink3:#1C1C1C;
+  --ink4:#252525;
+  --paper:#F0EBE1;
+  --amber:#FF8C00;
+  --amber2:#FFA833;
+  --red:#E8001C;
+  --green:#00C851;
+  --wire:#2A2A2A;
+  --wire2:#333;
+  --text:#D4CFC7;
+  --muted:#6B6560;
+  --muted2:#8A847C;
+  --display:'Bebas Neue',cursive;
+  --mono:'IBM Plex Mono',monospace;
+  --body:'IBM Plex Sans',sans-serif;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--ink);
+  color:var(--text);
+  font-family:var(--body);
+  overflow-x:hidden;
+  cursor:none;
+}
+
+/* CURSOR */
+#cur{position:fixed;width:6px;height:6px;background:var(--amber);pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:transform .08s;}
+#cur-x{position:fixed;width:28px;height:28px;border:1px solid rgba(255,140,0,.5);pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:all .12s;}
+#cur-x::before,#cur-x::after{content:'';position:absolute;background:rgba(255,140,0,.4);}
+#cur-x::before{top:50%;left:0;right:0;height:1px;margin-top:-.5px;}
+#cur-x::after{left:50%;top:0;bottom:0;width:1px;margin-left:-.5px;}
+
+/* NOISE */
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:8000;opacity:.6;
+}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:500;
+  height:60px;display:flex;align-items:stretch;
+  background:var(--ink2);
+  border-bottom:1px solid var(--wire2);
+}
+.nav-left{
+  display:flex;align-items:center;padding:0 28px;
+  border-right:1px solid var(--wire2);gap:16px;flex-shrink:0;
+}
+.nav-threat{
+  font-family:var(--mono);font-size:.58rem;letter-spacing:.15em;
+  background:var(--amber);color:#000;padding:3px 8px;font-weight:700;
+}
+.nav-logo img{height:30px;display:block;filter:brightness(1.1);}
+.nav-links{display:flex;align-items:stretch;flex:1;}
+.nav-links a{
+  display:flex;align-items:center;padding:0 22px;
+  font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted2);text-decoration:none;border-right:1px solid var(--wire);
+  transition:color .18s,background .18s;
+}
+.nav-links a:hover{color:var(--amber);background:rgba(255,140,0,.04);}
+.nav-right{
+  display:flex;align-items:center;padding:0 24px;gap:16px;
+  border-left:1px solid var(--wire2);margin-left:auto;
+}
+.nav-status{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;color:var(--green);}
+.pulse-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pdot 2s infinite;}
+@keyframes pdot{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,200,81,.5)}50%{opacity:.7;box-shadow:0 0 0 5px rgba(0,200,81,0)}}
+.nav-cta{
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;
+  background:var(--amber);color:#000;padding:8px 18px;text-decoration:none;font-weight:700;
+  transition:background .18s;cursor:none;border:none;display:flex;align-items:center;
+}
+.nav-cta:hover{background:var(--amber2);}
+
+/* ── HERO ── */
+#hero{
+  min-height:100vh;padding:60px 0 0;
+  display:grid;grid-template-rows:1fr auto;
+  position:relative;overflow:hidden;
+}
+.hero-main{
+  display:grid;grid-template-columns:1fr 520px;
+  align-items:center;padding:80px 60px 60px;gap:0;
+}
+.hero-left{padding-right:60px;border-right:1px solid var(--wire2);}
+.hero-classify{
+  display:flex;align-items:center;gap:0;margin-bottom:40px;
+}
+.cls-tag{
+  font-family:var(--mono);font-size:.6rem;letter-spacing:.18em;font-weight:700;
+  padding:5px 12px;text-transform:uppercase;
+}
+.cls-top-secret{background:var(--red);color:#fff;}
+.cls-sep{width:1px;height:22px;background:var(--wire2);}
+.cls-ref{background:var(--ink3);color:var(--muted);border:1px solid var(--wire);}
+.hero-num{
+  font-family:var(--mono);font-size:.62rem;color:var(--muted);letter-spacing:.2em;
+  margin-bottom:16px;display:flex;align-items:center;gap:12px;
+}
+.hero-num::before{content:'';width:32px;height:1px;background:var(--amber);}
+h1.hero-title{
+  font-family:var(--display);
+  font-size:clamp(5rem,9vw,10rem);
+  line-height:.92;letter-spacing:.02em;
+  color:#fff;margin-bottom:0;
+}
+.hero-title .amber{color:var(--amber);}
+.hero-title .stroke{
+  -webkit-text-stroke:1px rgba(255,255,255,.25);
+  color:transparent;
+}
+.hero-tagline{
+  font-family:var(--mono);font-size:.78rem;color:var(--muted2);
+  max-width:480px;line-height:1.9;margin:32px 0 44px;
+  border-left:2px solid var(--amber);padding-left:16px;
+}
+.hero-actions{display:flex;gap:0;align-items:center;}
+.btn-solid{
+  display:inline-block;text-decoration:none;
+  background:var(--amber);color:#000;
+  font-family:var(--mono);font-size:.68rem;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;
+  padding:15px 32px;cursor:none;
+  transition:background .2s;border:none;
+}
+.btn-solid:hover{background:var(--amber2);}
+.btn-line{
+  display:inline-block;text-decoration:none;
+  background:transparent;color:var(--muted2);
+  font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;
+  padding:15px 32px;border:1px solid var(--wire2);cursor:none;
+  transition:all .2s;
+}
+.btn-line:hover{border-color:var(--amber);color:var(--amber);}
+
+/* HERO RIGHT */
+.hero-right{
+  position:relative;padding:40px;display:flex;flex-direction:column;justify-content:center;
+}
+.dossier-card{
+  background:var(--ink3);border:1px solid var(--wire2);
+  padding:28px;margin-bottom:16px;position:relative;
+  transition:border-color .2s;
+}
+.dossier-card:hover{border-color:rgba(255,140,0,.3);}
+.dossier-card::before{
+  content:attr(data-label);
+  position:absolute;top:-9px;left:16px;
+  font-family:var(--mono);font-size:.55rem;letter-spacing:.18em;text-transform:uppercase;
+  background:var(--ink3);padding:0 8px;color:var(--amber);border:1px solid var(--wire2);
+  border-color:rgba(255,140,0,.3);
+}
+.doc-stat{font-family:var(--display);font-size:3.2rem;color:#fff;line-height:1;}
+.doc-stat-sub{font-family:var(--mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em;margin-top:4px;}
+.doc-img-frame{
+  position:relative;border:1px solid var(--wire2);
+  background:var(--ink4);overflow:hidden;
+}
+.doc-img-frame img{width:100%;display:block;filter:contrast(1.05) brightness(.95);}
+.doc-img-frame::after{
+  content:'SUBJECT: BERT BLEVINS\ACLASS: UNRESTRICTED';
+  white-space:pre;
+  position:absolute;bottom:0;left:0;right:0;
+  font-family:var(--mono);font-size:.58rem;letter-spacing:.08em;
+  background:rgba(0,0,0,.75);color:var(--amber);padding:8px 12px;
+  border-top:1px solid var(--wire);
+}
+.doc-stats-row{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--wire);}
+.doc-stat-cell{background:var(--ink3);padding:18px 20px;}
+
+/* TICKER */
+.ticker-strip{
+  background:var(--amber);color:#000;padding:10px 0;overflow:hidden;
+  border-top:1px solid rgba(255,140,0,.3);
+}
+.ticker-inner{display:flex;width:max-content;animation:tick 22s linear infinite;}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tick-item{
+  font-family:var(--mono);font-size:.65rem;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;
+  padding:0 36px;display:flex;align-items:center;gap:12px;white-space:nowrap;
+}
+.tick-item::after{content:'//';opacity:.4;}
+
+/* ── SECTIONS ── */
+section{padding:100px 60px;position:relative;}
+.section-header{display:flex;align-items:flex-end;gap:32px;margin-bottom:64px;padding-bottom:24px;border-bottom:1px solid var(--wire2);}
+.section-num{font-family:var(--display);font-size:7rem;color:rgba(255,140,0,.08);line-height:1;flex-shrink:0;}
+.section-meta{flex:1;}
+.section-eye{font-family:var(--mono);font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);margin-bottom:8px;}
+.section-title{font-family:var(--display);font-size:clamp(2.5rem,5vw,5rem);line-height:.95;color:#fff;letter-spacing:.03em;}
+
+/* ── SERVICES ── */
+#services{background:var(--ink2);}
+.svc-list{display:flex;flex-direction:column;}
+.svc-row{
+  display:grid;grid-template-columns:56px 1fr auto;align-items:start;gap:32px;
+  padding:32px 0;border-bottom:1px solid var(--wire);cursor:none;
+  transition:background .2s;position:relative;
+}
+.svc-row::before{
+  content:'';position:absolute;left:-60px;right:-60px;top:0;bottom:0;
+  background:rgba(255,140,0,.03);opacity:0;transition:opacity .3s;
+}
+.svc-row:hover::before{opacity:1;}
+.svc-row:hover .svc-name{color:var(--amber);}
+.svc-row:first-child{border-top:1px solid var(--wire);}
+.svc-n{font-family:var(--mono);font-size:.62rem;color:var(--muted);letter-spacing:.15em;padding-top:6px;}
+.svc-body{}
+.svc-name{font-family:var(--display);font-size:clamp(1.6rem,3vw,2.6rem);color:#fff;letter-spacing:.03em;transition:color .2s;line-height:1;}
+.svc-desc{font-family:var(--body);font-size:.78rem;color:var(--muted2);line-height:1.8;margin-top:10px;max-width:600px;}
+.svc-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;}
+.chip{font-family:var(--mono);font-size:.58rem;letter-spacing:.08em;border:1px solid var(--wire2);color:var(--muted);padding:3px 9px;transition:all .2s;}
+.svc-row:hover .chip{border-color:rgba(255,140,0,.25);color:rgba(255,140,0,.7);}
+.svc-arrow{font-size:1.4rem;color:var(--wire2);padding-top:6px;transition:color .2s,transform .2s;}
+.svc-row:hover .svc-arrow{color:var(--amber);transform:translateX(4px);}
+
+/* ── INDUSTRIES ── */
+#industries{background:var(--ink);}
+.ind-layout{display:grid;grid-template-columns:240px 1fr;gap:0;}
+.ind-nav{border-right:1px solid var(--wire2);}
+.ind-btn{
+  display:block;width:100%;text-align:left;padding:20px 28px;
+  font-family:var(--mono);font-size:.67rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);background:none;border:none;border-bottom:1px solid var(--wire);
+  cursor:none;transition:all .2s;position:relative;
+}
+.ind-btn::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--amber);transform:scaleY(0);transition:transform .2s;transform-origin:bottom;
+}
+.ind-btn.active{color:var(--amber);background:rgba(255,140,0,.05);}
+.ind-btn.active::before{transform:scaleY(1);}
+.ind-btn:hover{color:var(--text);}
+.ind-panel{padding:0 48px;display:none;}
+.ind-panel.active{display:block;}
+.ind-head{font-family:var(--display);font-size:3rem;color:#fff;letter-spacing:.03em;margin-bottom:20px;}
+.ind-body{font-family:var(--body);font-size:.8rem;color:var(--muted2);line-height:1.9;max-width:560px;margin-bottom:32px;}
+.ind-features{list-style:none;display:flex;flex-direction:column;gap:0;margin-bottom:40px;}
+.ind-feat{
+  font-family:var(--mono);font-size:.7rem;color:var(--text);
+  padding:12px 0;border-bottom:1px solid var(--wire);
+  display:flex;align-items:center;gap:14px;
+}
+.ind-feat::before{content:'→';color:var(--amber);flex-shrink:0;}
+.ind-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--wire);}
+.ind-metric{background:var(--ink3);padding:22px 18px;}
+.ind-mval{font-family:var(--display);font-size:2.2rem;color:var(--amber);line-height:1;}
+.ind-mlbl{font-family:var(--mono);font-size:.58rem;color:var(--muted);letter-spacing:.08em;margin-top:5px;line-height:1.4;}
+
+/* ── PAM ── */
+#pam{background:var(--ink2);}
+.pam-steps{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid var(--wire2);}
+.pam-step{
+  padding:36px 24px;position:relative;border-right:1px solid var(--wire2);
+  cursor:none;transition:background .25s;
+}
+.pam-step:last-child{border-right:none;}
+.pam-step:hover{background:rgba(255,140,0,.04);}
+.pam-step:hover .pam-snum{color:var(--amber);}
+.pam-step.highlight{background:rgba(255,140,0,.06);border-color:rgba(255,140,0,.25);}
+.pam-snum{font-family:var(--display);font-size:4rem;color:var(--wire2);line-height:1;margin-bottom:16px;transition:color .25s;}
+.pam-step.highlight .pam-snum{color:rgba(255,140,0,.25);}
+.pam-icon{font-size:1.6rem;margin-bottom:14px;display:block;}
+.pam-step h4{font-family:var(--display);font-size:1.2rem;color:#fff;letter-spacing:.03em;margin-bottom:8px;}
+.pam-step p{font-family:var(--mono);font-size:.63rem;color:var(--muted);line-height:1.7;}
+.pam-connector{
+  position:absolute;right:-13px;top:50%;transform:translateY(-50%);
+  width:25px;height:25px;background:var(--ink2);border:1px solid var(--wire2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:.7rem;color:var(--amber);z-index:2;
+}
+.pam-note{
+  margin-top:32px;
+  font-family:var(--mono);font-size:.72rem;color:var(--muted);
+  line-height:1.9;border-left:2px solid var(--wire2);padding-left:20px;
+  max-width:680px;
+}
+
+/* ── TERMINAL ── */
+#terminal-section{background:var(--ink);}
+.term-layout{display:grid;grid-template-columns:1fr 380px;gap:0;border:1px solid var(--wire2);}
+.terminal{background:#080808;flex:1;display:flex;flex-direction:column;}
+.t-topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 20px;border-bottom:1px solid var(--wire);background:var(--ink3);
+}
+.t-dots{display:flex;gap:7px;}
+.t-dot{width:10px;height:10px;border-radius:50%;}
+.t-r{background:#FF5F57;}.t-y{background:#FEBC2E;}.t-g{background:#28C840;}
+.t-title{font-family:var(--mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;}
+.t-body{padding:22px;flex:1;overflow-y:auto;min-height:300px;max-height:380px;}
+.t-line{font-family:var(--mono);font-size:.74rem;line-height:1.7;margin-bottom:3px;}
+.t-p{color:var(--amber);}.t-c{color:#fff;}.t-o{color:var(--muted2);}.t-s{color:var(--green);}
+.t-w{color:#FEBC2E;}.t-e{color:var(--red);}
+.t-cur{display:inline-block;width:7px;height:13px;background:var(--amber);animation:blink 1s step-end infinite;vertical-align:middle;margin-left:2px;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.t-inputrow{display:flex;align-items:center;gap:10px;padding:12px 22px;border-top:1px solid var(--wire);background:rgba(0,0,0,.4);}
+.t-input{background:none;border:none;outline:none;font-family:var(--mono);font-size:.74rem;color:#fff;flex:1;cursor:none;}
+.t-input::placeholder{color:var(--muted);}
+.term-sidebar{
+  background:var(--ink3);border-left:1px solid var(--wire2);padding:28px;
+  display:flex;flex-direction:column;gap:24px;
+}
+.ts-label{font-family:var(--mono);font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);margin-bottom:10px;}
+.ts-block{border:1px solid var(--wire);}
+.ts-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 14px;border-bottom:1px solid var(--wire);font-family:var(--mono);font-size:.67rem;
+}
+.ts-row:last-child{border-bottom:none;}
+.ts-key{color:var(--muted);}
+.ts-val{color:#fff;font-weight:500;}
+.ts-val.ok{color:var(--green);}
+.ts-val.warn{color:#FEBC2E;}
+.ts-val.bad{color:var(--red);}
+.t-hint{font-family:var(--mono);font-size:.62rem;color:var(--muted);margin-top:20px;}
+.t-hint code{color:var(--amber);}
+
+/* ── ABOUT ── */
+#about{background:var(--ink2);}
+.about-layout{display:grid;grid-template-columns:340px 1fr;gap:0;}
+.about-card{
+  border-right:1px solid var(--wire2);padding:0 48px 0 0;
+}
+.about-portrait{
+  width:100%;aspect-ratio:3/4;object-fit:cover;object-position:top;
+  display:block;filter:grayscale(.15) contrast(1.05);
+  border:1px solid var(--wire2);
+}
+.about-id{
+  margin-top:20px;border:1px solid var(--wire2);background:var(--ink3);
+}
+.about-id-row{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  padding:10px 14px;border-bottom:1px solid var(--wire);
+  font-family:var(--mono);font-size:.64rem;
+}
+.about-id-row:last-child{border-bottom:none;}
+.id-key{color:var(--muted);}
+.id-val{color:#fff;text-align:right;max-width:160px;}
+.id-val.amber{color:var(--amber);}
+.about-content{padding-left:60px;}
+.about-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;}
+.about-name{font-family:var(--display);font-size:4rem;color:#fff;letter-spacing:.03em;line-height:.95;}
+.about-role-tag{font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;background:var(--amber);color:#000;padding:5px 12px;font-weight:700;white-space:nowrap;margin-top:8px;}
+.about-bio p{font-family:var(--body);font-size:.82rem;color:var(--muted2);line-height:1.95;margin-bottom:16px;}
+.skills-table{width:100%;border-collapse:collapse;margin-top:32px;}
+.skills-table thead tr{border-bottom:1px solid var(--wire2);}
+.skills-table th{font-family:var(--mono);font-size:.58rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);padding:8px 12px 12px;text-align:left;font-weight:400;}
+.skills-table td{padding:12px;border-bottom:1px solid var(--wire);}
+.sk-name{font-family:var(--mono);font-size:.7rem;color:var(--text);}
+.sk-bar-wrap{background:var(--wire);height:3px;border-radius:0;}
+.sk-bar{background:var(--amber);height:3px;animation:grow 1.5s ease forwards;}
+@keyframes grow{from{width:0}}
+.sk-pct{font-family:var(--mono);font-size:.65rem;color:var(--amber);text-align:right;}
+
+/* ── CTA ── */
+#cta{
+  background:var(--ink);padding:0;
+  display:grid;grid-template-columns:1fr 1fr;min-height:60vh;
+}
+.cta-left{
+  background:var(--amber);padding:80px 60px;
+  display:flex;flex-direction:column;justify-content:center;
+}
+.cta-eye{font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(0,0,0,.5);margin-bottom:16px;}
+.cta-h{font-family:var(--display);font-size:clamp(2.5rem,5vw,5.5rem);line-height:.92;color:#000;letter-spacing:.02em;margin-bottom:24px;}
+.cta-p{font-family:var(--body);font-size:.82rem;color:rgba(0,0,0,.65);line-height:1.8;max-width:400px;}
+.cta-right{
+  padding:80px 60px;display:flex;flex-direction:column;justify-content:center;
+  border-left:1px solid var(--wire2);
+}
+.cta-form-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);margin-bottom:12px;}
+.cta-form{display:flex;flex-direction:column;gap:0;max-width:400px;}
+.cta-input{
+  background:var(--ink3);border:1px solid var(--wire2);border-bottom:none;
+  color:#fff;font-family:var(--mono);font-size:.75rem;
+  padding:16px 18px;outline:none;cursor:none;
+  transition:border-color .2s;
+}
+.cta-input:focus{border-color:var(--amber);}
+.cta-input::placeholder{color:var(--muted);}
+.cta-input.last{border-bottom:1px solid var(--wire2);}
+.cta-submit{
+  background:var(--amber);color:#000;
+  font-family:var(--mono);font-size:.7rem;font-weight:700;
+  letter-spacing:.15em;text-transform:uppercase;
+  padding:16px;border:none;cursor:none;margin-top:12px;
+  transition:background .18s;
+}
+.cta-submit:hover{background:var(--amber2);}
+.cta-contacts{margin-top:40px;display:flex;flex-direction:column;gap:12px;}
+.cta-contact{font-family:var(--mono);font-size:.7rem;color:var(--muted2);display:flex;gap:12px;align-items:center;}
+.cta-contact .lbl{color:var(--amber);width:50px;flex-shrink:0;}
+.cta-contact a{color:var(--text);text-decoration:none;}
+.cta-contact a:hover{color:var(--amber);}
+#cta-msg{font-family:var(--mono);font-size:.65rem;color:var(--green);margin-top:10px;}
+
+/* ── FOOTER ── */
+footer{
+  background:var(--ink2);border-top:1px solid var(--wire2);
+  padding:32px 60px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;
+}
+.footer-l{display:flex;align-items:center;gap:20px;}
+.footer-sep{width:1px;height:20px;background:var(--wire2);}
+.footer-copy{font-family:var(--mono);font-size:.6rem;color:var(--muted);letter-spacing:.06em;}
+.footer-links{display:flex;gap:24px;flex-wrap:wrap;}
+.footer-links a{font-family:var(--mono);font-size:.6rem;color:var(--muted);text-decoration:none;letter-spacing:.08em;transition:color .18s;}
+.footer-links a:hover{color:var(--amber);}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .55s ease,transform .55s ease;}
+.reveal.visible{opacity:1;transform:translateY(0);}
+.d1{transition-delay:.05s}.d2{transition-delay:.12s}.d3{transition-delay:.19s}
+.d4{transition-delay:.26s}.d5{transition-delay:.33s}.d6{transition-delay:.4s}
+
+/* RESPONSIVE */
+@media(max-width:1100px){
+  .hero-main{grid-template-columns:1fr;padding:60px 32px;}
+  .hero-left{border-right:none;padding-right:0;border-bottom:1px solid var(--wire2);padding-bottom:40px;margin-bottom:0;}
+  .hero-right{padding:40px 0 0;}
+  .doc-stats-row{grid-template-columns:repeat(4,1fr);}
+  #services,#industries,#pam,#terminal-section,#about,section{padding:80px 32px;}
+  .pam-steps{grid-template-columns:1fr 1fr;border:none;gap:1px;background:var(--wire);}
+  .pam-connector{display:none;}
+  .term-layout{grid-template-columns:1fr;}
+  .term-sidebar{border-left:none;border-top:1px solid var(--wire2);}
+  #cta{grid-template-columns:1fr;}
+  footer{padding:28px 32px;}
+}
+@media(max-width:768px){
+  nav{height:52px;}
+  .nav-links{display:none;}
+  .nav-left{padding:0 18px;}
+  .nav-right{padding:0 18px;}
+  .ind-layout{grid-template-columns:1fr;}
+  .ind-nav{border-right:none;border-bottom:1px solid var(--wire2);display:flex;overflow-x:auto;}
+  .ind-btn{white-space:nowrap;border-bottom:none;border-right:1px solid var(--wire);}
+  .ind-panel{padding:32px 0 0;}
+  .ind-metrics{grid-template-columns:1fr 1fr;}
+  .about-layout{grid-template-columns:1fr;}
+  .about-card{border-right:none;padding-right:0;border-bottom:1px solid var(--wire2);padding-bottom:40px;margin-bottom:40px;}
+  .about-content{padding-left:0;}
+  .about-portrait{max-height:340px;}
+}
+</style>
+</head>
+<body>
+<div id="cur"></div>
+<div id="cur-x"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-left">
+    <span class="nav-threat">THREAT LVL: HIGH</span>
+    <img src="https://incgpt.com/wp-content/uploads/2026/04/logo-incgpt.png" height="30" alt="INCGPT" style="filter:brightness(1.15) saturate(.9);">
+  </div>
+  <div class="nav-links">
+    <a href="#services">Services</a>
+    <a href="#industries">Industries</a>
+    <a href="#pam">PAM Flow</a>
+    <a href="#about">About</a>
+  </div>
+  <div class="nav-right">
+    <div class="nav-status"><div class="pulse-dot"></div>SYSTEM ACTIVE</div>
+    <a href="#cta" class="nav-cta">Engage →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-main">
+    <div class="hero-left">
+      <div class="hero-classify">
+        <span class="cls-tag cls-top-secret">Classified</span>
+        <div class="cls-sep"></div>
+        <span class="cls-tag cls-ref">REF: INC-2025-AI-PAM</span>
+      </div>
+      <div class="hero-num">01 / MISSION BRIEFING</div>
+      <h1 class="hero-title">
+        <span class="stroke">SECURE</span><br>
+        YOUR<br>
+        <span class="amber">FUTURE</span>
+      </h1>
+      <p class="hero-tagline">Expert GPT solutions fused with Privileged Access Management — driving innovation, enforcing Zero Trust, and hardening your security posture from the inside out.</p>
+      <div class="hero-actions">
+        <a href="#services" class="btn-solid">View Services →</a>
+        <a href="#cta" class="btn-line">Get In Touch</a>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="dossier-card" data-label="SUBJECT PHOTO">
+        <div class="doc-img-frame">
+          <img src="https://incgpt.com/wp-content/uploads/2026/04/bert.png" alt="Bert Blevins">
+        </div>
+      </div>
+      <div class="doc-stats-row">
+        <div class="doc-stat-cell dossier-card" data-label="ACCOUNTS">
+          <div class="doc-stat">847</div>
+          <div class="doc-stat-sub">Accounts Secured</div>
+        </div>
+        <div class="doc-stat-cell dossier-card" data-label="UPTIME">
+          <div class="doc-stat">98.4<span style="font-size:1.4rem">%</span></div>
+          <div class="doc-stat-sub">Compliance Score</div>
+        </div>
+        <div class="doc-stat-cell dossier-card" data-label="TRUST">
+          <div class="doc-stat" style="font-size:2rem;color:var(--amber)">ZERO</div>
+          <div class="doc-stat-sub">Trust Policy</div>
+        </div>
+        <div class="doc-stat-cell dossier-card" data-label="BLOCKED">
+          <div class="doc-stat" style="color:var(--red)">2.3K</div>
+          <div class="doc-stat-sub">Threats Blocked</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TICKER -->
+  <div class="ticker-strip">
+    <div class="ticker-inner">
+      <div class="tick-item">AI Strategy Development</div>
+      <div class="tick-item">Custom GPT Solutions</div>
+      <div class="tick-item">Privileged Access Management</div>
+      <div class="tick-item">Zero Trust Security</div>
+      <div class="tick-item">SharePoint Migration</div>
+      <div class="tick-item">PowerApps Automation</div>
+      <div class="tick-item">Cloud Identity Discovery</div>
+      <div class="tick-item">JIT Permissions</div>
+      <div class="tick-item">MFA Everywhere</div>
+      <div class="tick-item">Delinea Platform Expert</div>
+      <div class="tick-item">AI Strategy Development</div>
+      <div class="tick-item">Custom GPT Solutions</div>
+      <div class="tick-item">Privileged Access Management</div>
+      <div class="tick-item">Zero Trust Security</div>
+      <div class="tick-item">SharePoint Migration</div>
+      <div class="tick-item">PowerApps Automation</div>
+      <div class="tick-item">Cloud Identity Discovery</div>
+      <div class="tick-item">JIT Permissions</div>
+      <div class="tick-item">MFA Everywhere</div>
+      <div class="tick-item">Delinea Platform Expert</div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section id="services">
+  <div class="section-header reveal">
+    <div class="section-num">01</div>
+    <div class="section-meta">
+      <div class="section-eye">What We Do</div>
+      <div class="section-title">Expert Services,<br>Engineered for Impact</div>
+    </div>
+  </div>
+  <div class="svc-list">
+    <div class="svc-row reveal d1">
+      <div class="svc-n">01</div>
+      <div class="svc-body">
+        <div class="svc-name">AI Strategy Development</div>
+        <div class="svc-desc">Feasibility studies, AI-readiness assessments, and strategic roadmaps tailored to align with your business goals.</div>
+        <div class="svc-chips"><span class="chip">Roadmapping</span><span class="chip">Feasibility</span><span class="chip">Assessment</span></div>
+      </div>
+      <div class="svc-arrow">→</div>
+    </div>
+    <div class="svc-row reveal d2">
+      <div class="svc-n">02</div>
+      <div class="svc-body">
+        <div class="svc-name">Custom GPT Solutions</div>
+        <div class="svc-desc">Bespoke GPT models for NLP, automated content creation, and intelligent workflows built to integrate with your operations.</div>
+        <div class="svc-chips"><span class="chip">NLP</span><span class="chip">Automation</span><span class="chip">Custom LLMs</span></div>
+      </div>
+      <div class="svc-arrow">→</div>
+    </div>
+    <div class="svc-row reveal d3">
+      <div class="svc-n">03</div>
+      <div class="svc-body">
+        <div class="svc-name">AI Integration Services</div>
+        <div class="svc-desc">Seamless AI integration from API connections to system modifications — harmonizing with your current tech stack from day one.</div>
+        <div class="svc-chips"><span class="chip">API</span><span class="chip">SharePoint</span><span class="chip">Power Platform</span></div>
+      </div>
+      <div class="svc-arrow">→</div>
+    </div>
+    <div class="svc-row reveal d4">
+      <div class="svc-n">04</div>
+      <div class="svc-body">
+        <div class="svc-name">Privileged Access Management</div>
+        <div class="svc-desc">Deploy and manage PAM solutions via Delinea platforms — credential vaulting, session monitoring, JIT permissions, zero trust access.</div>
+        <div class="svc-chips"><span class="chip">Delinea</span><span class="chip">JIT</span><span class="chip">Zero Trust</span></div>
+      </div>
+      <div class="svc-arrow">→</div>
+    </div>
+    <div class="svc-row reveal d5">
+      <div class="svc-n">05</div>
+      <div class="svc-body">
+        <div class="svc-name">SharePoint Migration</div>
+        <div class="svc-desc">On-premise to SharePoint Online migration with full content, permissions, and workflow integrity. InfoPath to PowerApps modernization.</div>
+        <div class="svc-chips"><span class="chip">Migration</span><span class="chip">M365</span><span class="chip">PowerApps</span></div>
+      </div>
+      <div class="svc-arrow">→</div>
+    </div>
+    <div class="svc-row reveal d6">
+      <div class="svc-n">06</div>
+      <div class="svc-body">
+        <div class="svc-name">Training &amp; Support</div>
+        <div class="svc-desc">Hands-on workshops, comprehensive training, and ongoing support ensuring your team confidently leverages AI and identity security tools.</div>
+        <div class="svc-chips"><span class="chip">Workshops</span><span class="chip">Certification</span><span class="chip">Support</span></div>
+      </div>
+      <div class="svc-arrow">→</div>
+    </div>
+  </div>
+</section>
+
+<!-- INDUSTRIES -->
+<section id="industries">
+  <div class="section-header reveal">
+    <div class="section-num">02</div>
+    <div class="section-meta">
+      <div class="section-eye">Industry Focus</div>
+      <div class="section-title">Tailored for<br>Your Sector</div>
+    </div>
+  </div>
+  <div class="ind-layout reveal">
+    <div class="ind-nav">
+      <button class="ind-btn active" onclick="indTab('oil',this)">Oil &amp; Gas</button>
+      <button class="ind-btn" onclick="indTab('insurance',this)">Insurance</button>
+      <button class="ind-btn" onclick="indTab('staffing',this)">Staffing</button>
+      <button class="ind-btn" onclick="indTab('retail',this)">Retail / SMB</button>
+    </div>
+
+    <div class="ind-panel active" id="ip-oil">
+      <div class="ind-head">Oil &amp; Gas AI</div>
+      <p class="ind-body">Critical infrastructure demands uncompromising security. We deploy PAM controls over OT environments while integrating AI-powered predictive analytics and document management.</p>
+      <ul class="ind-features">
+        <li class="ind-feat">OT/IT Privileged Access Controls</li>
+        <li class="ind-feat">AI-Driven Compliance Reporting</li>
+        <li class="ind-feat">Automated Credential Rotation</li>
+        <li class="ind-feat">Vendor Access Session Monitoring</li>
+        <li class="ind-feat">Zero Trust Remote Connectivity</li>
+      </ul>
+      <div class="ind-metrics">
+        <div class="ind-metric"><div class="ind-mval" id="c1">0</div><div class="ind-mlbl">Privileged Accounts Secured</div></div>
+        <div class="ind-metric"><div class="ind-mval" id="c2">0</div><div class="ind-mlbl">Threat Incidents Blocked</div></div>
+        <div class="ind-metric"><div class="ind-mval" id="c3">0</div><div class="ind-mlbl">Compliance Score %</div></div>
+        <div class="ind-metric"><div class="ind-mval" id="c4">0</div><div class="ind-mlbl">Avg Response (ms)</div></div>
+      </div>
+    </div>
+
+    <div class="ind-panel" id="ip-insurance">
+      <div class="ind-head">Insurance Innovation</div>
+      <p class="ind-body">Reduce fraud exposure and automate claims intelligence with custom GPT models trained on policy language and regulatory frameworks.</p>
+      <ul class="ind-features">
+        <li class="ind-feat">AI-Powered Claims Classification</li>
+        <li class="ind-feat">Policy Document NLP Search</li>
+        <li class="ind-feat">Agent Portal PAM Controls</li>
+        <li class="ind-feat">Regulatory Compliance Automation</li>
+        <li class="ind-feat">Fraud Pattern Detection</li>
+      </ul>
+      <div class="ind-metrics">
+        <div class="ind-metric"><div class="ind-mval">94%</div><div class="ind-mlbl">Claims Accuracy Improvement</div></div>
+        <div class="ind-metric"><div class="ind-mval">3×</div><div class="ind-mlbl">Faster Policy Analysis</div></div>
+        <div class="ind-metric"><div class="ind-mval">72%</div><div class="ind-mlbl">Fraud Detection Rate</div></div>
+        <div class="ind-metric"><div class="ind-mval">$2M+</div><div class="ind-mlbl">Avg Annual Savings</div></div>
+      </div>
+    </div>
+
+    <div class="ind-panel" id="ip-staffing">
+      <div class="ind-head">Staffing &amp; HR AI</div>
+      <p class="ind-body">Automate candidate screening, onboarding workflows, and contractor credential management with intelligent AI pipelines built for scale.</p>
+      <ul class="ind-features">
+        <li class="ind-feat">AI Resume Screening &amp; Ranking</li>
+        <li class="ind-feat">Contractor PAM Onboarding</li>
+        <li class="ind-feat">Automated JIT Access Provisioning</li>
+        <li class="ind-feat">Workforce Analytics Dashboards</li>
+        <li class="ind-feat">Compliance Audit Trails</li>
+      </ul>
+      <div class="ind-metrics">
+        <div class="ind-metric"><div class="ind-mval">80%</div><div class="ind-mlbl">Screening Time Reduction</div></div>
+        <div class="ind-metric"><div class="ind-mval">5×</div><div class="ind-mlbl">Placement Speed Increase</div></div>
+        <div class="ind-metric"><div class="ind-mval">100%</div><div class="ind-mlbl">Audit Trail Completeness</div></div>
+        <div class="ind-metric"><div class="ind-mval">24/7</div><div class="ind-mlbl">Automated Access Control</div></div>
+      </div>
+    </div>
+
+    <div class="ind-panel" id="ip-retail">
+      <div class="ind-head">Retail &amp; SMB</div>
+      <p class="ind-body">Level the playing field with enterprise-grade AI tools scaled for SMBs — chatbots, inventory intelligence, and secure customer data management.</p>
+      <ul class="ind-features">
+        <li class="ind-feat">AI Customer Service Chatbots</li>
+        <li class="ind-feat">Inventory Prediction Models</li>
+        <li class="ind-feat">Secure POS Credential Vaulting</li>
+        <li class="ind-feat">Marketing Automation AI</li>
+        <li class="ind-feat">Customer Insight Analytics</li>
+      </ul>
+      <div class="ind-metrics">
+        <div class="ind-metric"><div class="ind-mval">40%</div><div class="ind-mlbl">Revenue Uplift Avg</div></div>
+        <div class="ind-metric"><div class="ind-mval">60%</div><div class="ind-mlbl">Support Tickets Automated</div></div>
+        <div class="ind-metric"><div class="ind-mval">98%</div><div class="ind-mlbl">Customer Data Security</div></div>
+        <div class="ind-metric"><div class="ind-mval">2wk</div><div class="ind-mlbl">Typical Deployment</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PAM FLOW -->
+<section id="pam">
+  <div class="section-header reveal">
+    <div class="section-num">03</div>
+    <div class="section-meta">
+      <div class="section-eye">How It Works</div>
+      <div class="section-title">The PAM<br>Security Flow</div>
+    </div>
+  </div>
+  <div class="pam-steps reveal">
+    <div class="pam-step">
+      <div class="pam-snum">01</div>
+      <span class="pam-icon">👤</span>
+      <h4>User Request</h4>
+      <p>Privileged access request initiated by user or system</p>
+      <div class="pam-connector">→</div>
+    </div>
+    <div class="pam-step">
+      <div class="pam-snum">02</div>
+      <span class="pam-icon">🔐</span>
+      <h4>MFA Verify</h4>
+      <p>Multi-factor authentication gate — no bypass allowed</p>
+      <div class="pam-connector">→</div>
+    </div>
+    <div class="pam-step highlight">
+      <div class="pam-snum">03</div>
+      <span class="pam-icon">🛡️</span>
+      <h4>PAM Engine</h4>
+      <p>Policy evaluation &amp; JIT provisioning via Delinea</p>
+      <div class="pam-connector">→</div>
+    </div>
+    <div class="pam-step">
+      <div class="pam-snum">04</div>
+      <span class="pam-icon">📹</span>
+      <h4>Session Record</h4>
+      <p>Full session capture, keystroke logging &amp; monitoring</p>
+      <div class="pam-connector">→</div>
+    </div>
+    <div class="pam-step">
+      <div class="pam-snum">05</div>
+      <span class="pam-icon">🗝️</span>
+      <h4>Auto-Rotate</h4>
+      <p>Credentials rotated automatically post-session</p>
+    </div>
+  </div>
+  <p class="pam-note reveal">Every privileged action flows through a policy-enforced pipeline — no standing access, full audit trails, and credentials that never outlive their purpose.</p>
+</section>
+
+<!-- TERMINAL -->
+<section id="terminal-section">
+  <div class="section-header reveal">
+    <div class="section-num">04</div>
+    <div class="section-meta">
+      <div class="section-eye">Interactive Demo</div>
+      <div class="section-title">AI Security<br>Console</div>
+    </div>
+  </div>
+  <div class="term-layout reveal">
+    <div class="terminal">
+      <div class="t-topbar">
+        <div class="t-dots"><div class="t-dot t-r"></div><div class="t-dot t-y"></div><div class="t-dot t-g"></div></div>
+        <div class="t-title">INCGPT — AI Security Terminal v2.4.1</div>
+        <div style="font-family:var(--mono);font-size:.58rem;color:var(--muted);">832-281-0330</div>
+      </div>
+      <div class="t-body" id="term-body">
+        <div class="t-line"><span class="t-p">incgpt@secure:~$</span> <span class="t-c">system --init</span></div>
+        <div class="t-line t-s">✓ AI Engine Online</div>
+        <div class="t-line t-s">✓ PAM Vault Connected</div>
+        <div class="t-line t-w">⚠ 3 Privileged Sessions Active</div>
+        <div class="t-line t-o">&nbsp;</div>
+        <div class="t-line"><span class="t-p">incgpt@secure:~$</span> <span class="t-c">pam --status</span></div>
+        <div class="t-line t-o">Accounts monitored: <span style="color:#fff">847</span></div>
+        <div class="t-line t-o">Sessions recorded today: <span style="color:#fff">124</span></div>
+        <div class="t-line t-o">Threats blocked: <span style="color:var(--red)">12</span></div>
+        <div class="t-line t-o">Compliance score: <span style="color:var(--amber)">98.4%</span></div>
+        <div class="t-line t-o">&nbsp;</div>
+        <div class="t-line"><span class="t-p">incgpt@secure:~$</span> <span class="t-cur"></span></div>
+      </div>
+      <div class="t-inputrow">
+        <span class="t-p" style="flex-shrink:0">›</span>
+        <input class="t-input" id="term-input" type="text" placeholder="help, scan, ai, pam, whoami, services, clear..." autocomplete="off" spellcheck="false"/>
+      </div>
+    </div>
+    <div class="term-sidebar">
+      <div>
+        <div class="ts-label">Live Status</div>
+        <div class="ts-block">
+          <div class="ts-row"><span class="ts-key">AI Engine</span><span class="ts-val ok">ONLINE</span></div>
+          <div class="ts-row"><span class="ts-key">PAM Vault</span><span class="ts-val ok">CONNECTED</span></div>
+          <div class="ts-row"><span class="ts-key">Zero Trust</span><span class="ts-val ok">ENFORCED</span></div>
+          <div class="ts-row"><span class="ts-key">Active Sessions</span><span class="ts-val warn">3</span></div>
+          <div class="ts-row"><span class="ts-key">Threat Level</span><span class="ts-val bad">HIGH</span></div>
+          <div class="ts-row"><span class="ts-key">Compliance</span><span class="ts-val ok">98.4%</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="ts-label">Quick Commands</div>
+        <div class="ts-block">
+          <div class="ts-row"><span class="ts-key" style="color:var(--amber)">help</span><span class="ts-val" style="color:var(--muted)">list all</span></div>
+          <div class="ts-row"><span class="ts-key" style="color:var(--amber)">scan</span><span class="ts-val" style="color:var(--muted)">threat scan</span></div>
+          <div class="ts-row"><span class="ts-key" style="color:var(--amber)">ai</span><span class="ts-val" style="color:var(--muted)">capabilities</span></div>
+          <div class="ts-row"><span class="ts-key" style="color:var(--amber)">pam</span><span class="ts-val" style="color:var(--muted)">PAM status</span></div>
+          <div class="ts-row"><span class="ts-key" style="color:var(--amber)">whoami</span><span class="ts-val" style="color:var(--muted)">identity</span></div>
+          <div class="ts-row"><span class="ts-key" style="color:var(--amber)">clear</span><span class="ts-val" style="color:var(--muted)">reset</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="section-header reveal">
+    <div class="section-num">05</div>
+    <div class="section-meta">
+      <div class="section-eye">The Expert</div>
+      <div class="section-title">Bert Blevins</div>
+    </div>
+  </div>
+  <div class="about-layout reveal">
+    <div class="about-card">
+      <img class="about-portrait" src="https://incgpt.com/wp-content/uploads/2026/04/bert.png" alt="Bert Blevins">
+      <div class="about-id">
+        <div class="about-id-row"><span class="id-key">NAME</span><span class="id-val">Bert Blevins</span></div>
+        <div class="about-id-row"><span class="id-key">CLEARANCE</span><span class="id-val amber">UNRESTRICTED</span></div>
+        <div class="about-id-row"><span class="id-key">EDUCATION</span><span class="id-val">MBA — UNLV</span></div>
+        <div class="about-id-row"><span class="id-key">CERT</span><span class="id-val">Delinea Certified</span></div>
+        <div class="about-id-row"><span class="id-key">SPECIALTY</span><span class="id-val">PAM / AI / M365</span></div>
+        <div class="about-id-row"><span class="id-key">CONTACT</span><span class="id-val amber">832-281-0330</span></div>
+      </div>
+    </div>
+    <div class="about-content">
+      <div class="about-top">
+        <div>
+          <div class="about-name">Technology<br>Entrepreneur</div>
+        </div>
+        <div class="about-role-tag">AI &amp; Identity Security</div>
+      </div>
+      <div class="about-bio">
+        <p>Bert Blevins is a distinguished technology entrepreneur who bridges technical innovation and business strategy. Holding an MBA from the University of Nevada Las Vegas and a B.S. in Advertising from Western Kentucky University, he operates at the intersection of AI and cybersecurity.</p>
+        <p>As a Delinea platform expert, Bert educates security professionals through YouTube tutorials, live workshops, and custom PAM deployments — helping organizations achieve Zero Trust security postures that scale.</p>
+      </div>
+      <table class="skills-table">
+        <thead>
+          <tr><th>Skill</th><th>Proficiency</th><th style="text-align:right">Level</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="sk-name">AI/GPT Engineering</td><td><div class="sk-bar-wrap"><div class="sk-bar" style="width:92%"></div></div></td><td class="sk-pct">92%</td></tr>
+          <tr><td class="sk-name">PAM / Delinea Platform</td><td><div class="sk-bar-wrap"><div class="sk-bar" style="width:97%"></div></div></td><td class="sk-pct">97%</td></tr>
+          <tr><td class="sk-name">SharePoint / M365</td><td><div class="sk-bar-wrap"><div class="sk-bar" style="width:88%"></div></div></td><td class="sk-pct">88%</td></tr>
+          <tr><td class="sk-name">Zero Trust Architecture</td><td><div class="sk-bar-wrap"><div class="sk-bar" style="width:90%"></div></div></td><td class="sk-pct">90%</td></tr>
+          <tr><td class="sk-name">Cloud Identity Security</td><td><div class="sk-bar-wrap"><div class="sk-bar" style="width:85%"></div></div></td><td class="sk-pct">85%</td></tr>
+          <tr><td class="sk-name">PowerApps / Power Automate</td><td><div class="sk-bar-wrap"><div class="sk-bar" style="width:83%"></div></div></td><td class="sk-pct">83%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="cta-left">
+    <div class="cta-eye">// Ready to Accelerate //</div>
+    <h2 class="cta-h">Power Your<br>Business<br>with AI.</h2>
+    <p class="cta-p">Join organizations leveraging expert GPT solutions and enterprise-grade security to outpace the competition and protect what matters most.</p>
+  </div>
+  <div class="cta-right">
+    <div class="cta-form-label">Request Access</div>
+    <div class="cta-form">
+      <input class="cta-input" type="text" placeholder="Full Name" id="cta-name"/>
+      <input class="cta-input" type="email" placeholder="Email Address" id="email-input"/>
+      <input class="cta-input last" type="text" placeholder="Organization"/>
+      <button class="cta-submit" onclick="handleSubscribe()">Submit Request →</button>
+    </div>
+    <div id="cta-msg"></div>
+    <div class="cta-contacts">
+      <div class="cta-contact"><span class="lbl">EMAIL</span><a href="mailto:info@incgpt.com">info@incgpt.com</a></div>
+      <div class="cta-contact"><span class="lbl">PHONE</span><a href="tel:8322810330">832-281-0330</a></div>
+      <div class="cta-contact"><span class="lbl">WEB</span><a href="https://incgpt.com" target="_blank">incgpt.com</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-l">
+    <img src="https://incgpt.com/wp-content/uploads/2026/04/logo-incgpt.png" height="28" alt="INCGPT" style="filter:brightness(1.1) saturate(.85);">
+    <div class="footer-sep"></div>
+    <div class="footer-copy">© 2025 BertBlevins.com · All Rights Reserved</div>
+  </div>
+  <div class="footer-links">
+    <a href="https://incgpt.com" target="_blank">incgpt.com</a>
+    <a href="https://www.linkedin.com/in/bertblevins/" target="_blank">LinkedIn</a>
+    <a href="https://gptpam.com" target="_blank">GPTPAM</a>
+    <a href="https://www.youtube.com/channel/UCJs9i3yBK8h07MEE704RmZw" target="_blank">YouTube</a>
+    <a href="https://pamusertraining.com/privileged-access-management/" target="_blank">PAM Training</a>
+  </div>
+</footer>
+
+<script>
+// CURSOR
+const cur=document.getElementById('cur'),curX=document.getElementById('cur-x');
+document.addEventListener('mousemove',e=>{
+  cur.style.left=e.clientX+'px';cur.style.top=e.clientY+'px';
+  setTimeout(()=>{curX.style.left=e.clientX+'px';curX.style.top=e.clientY+'px';},90);
+});
+document.querySelectorAll('a,button,.svc-row,.pam-step,.ind-btn').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{cur.style.transform='translate(-50%,-50%) scale(3)';curX.style.transform='translate(-50%,-50%) scale(1.6)';curX.style.opacity='1';});
+  el.addEventListener('mouseleave',()=>{cur.style.transform='translate(-50%,-50%) scale(1)';curX.style.transform='translate(-50%,-50%) scale(1)';curX.style.opacity='1';});
+});
+
+// INDUSTRY TABS
+function indTab(id,btn){
+  document.querySelectorAll('.ind-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.ind-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('ip-'+id).classList.add('active');
+}
+
+// COUNTER ANIM
+function animCount(el,target,suf='',dur=1200){
+  let v=0,step=target/(dur/16);
+  const t=setInterval(()=>{v+=step;if(v>=target){v=target;clearInterval(t);}el.textContent=Math.floor(v)+suf;},16);
+}
+let ranC=false;
+new IntersectionObserver(entries=>{
+  if(entries[0].isIntersecting&&!ranC){
+    ranC=true;
+    animCount(document.getElementById('c1'),847);
+    animCount(document.getElementById('c2'),2340);
+    animCount(document.getElementById('c3'),98,'%');
+    animCount(document.getElementById('c4'),12);
+  }
+},{threshold:.3}).observe(document.getElementById('ip-oil'));
+
+// TERMINAL
+const tb=document.getElementById('term-body'),ti=document.getElementById('term-input');
+const cmds={
+  help:()=>[{c:'t-o',t:'Available commands:'},{c:'t-s',t:'  scan      — threat scan'},{c:'t-s',t:'  ai        — AI capabilities'},{c:'t-s',t:'  pam       — PAM status'},{c:'t-s',t:'  whoami    — identity info'},{c:'t-s',t:'  services  — service catalog'},{c:'t-s',t:'  clear     — clear terminal'}],
+  scan:()=>{const n=Math.floor(Math.random()*5);return[{c:'t-o',t:'Initiating threat scan...'},{c:'t-o',t:'Scanning privileged accounts... [██████████] 100%'},{c:'t-o',t:`Accounts checked: ${847+Math.floor(Math.random()*10)}`},n>0?{c:'t-e',t:`⚠ ${n} anomalous session(s) detected!`}:{c:'t-s',t:'✓ No threats detected. All clear.'},{c:'t-o',t:`Scan complete. ${new Date().toLocaleTimeString()}`}];},
+  ai:()=>[{c:'t-o',t:'INCGPT AI Engine v2.4'},{c:'t-s',t:'✓ Custom GPT Models: Active'},{c:'t-s',t:'✓ NLP Pipeline: Running'},{c:'t-s',t:'✓ SharePoint AI: Connected'},{c:'t-w',t:'→ Industries: Oil & Gas, Insurance, Staffing, Retail'},{c:'t-o',t:'Automate workflows, analyze documents & chat.'}],
+  pam:()=>[{c:'t-o',t:'Privileged Access Mgmt — Delinea'},{c:'t-o',t:`Vaulted credentials:  ${847+Math.floor(Math.random()*20)}`},{c:'t-o',t:`Active sessions:      ${Math.floor(Math.random()*8)+2}`},{c:'t-s',t:'JIT permissions:      ENABLED'},{c:'t-s',t:'Session recording:    ENABLED'},{c:'t-s',t:'Zero Trust mode:      ENFORCED'},{c:'t-o',t:`Last audit: ${new Date().toLocaleDateString()}`}],
+  whoami:()=>[{c:'t-o',t:'User: visitor@incgpt.com'},{c:'t-o',t:'Role: Guest — Read Only'},{c:'t-w',t:'→ Contact Bert to request privileged access.'},{c:'t-o',t:'832-281-0330 | info@incgpt.com'}],
+  services:()=>[{c:'t-o',t:'INCGPT Service Catalog:'},{c:'t-s',t:'[01] AI Strategy Development'},{c:'t-s',t:'[02] Custom GPT Solutions'},{c:'t-s',t:'[03] AI Integration Services'},{c:'t-s',t:'[04] Privileged Access Management'},{c:'t-s',t:'[05] SharePoint / PowerApps'},{c:'t-s',t:'[06] Training & Ongoing Support'}],
+  clear:()=>{tb.innerHTML='';return[];},
+};
+function aL(c,t){const d=document.createElement('div');d.className='t-line';const s=document.createElement('span');s.className=c;s.textContent=t;d.appendChild(s);tb.appendChild(d);}
+function aP(cmd){const d=document.createElement('div');d.className='t-line';d.innerHTML=`<span class="t-p">incgpt@secure:~$</span> <span class="t-c">${cmd}</span>`;tb.appendChild(d);}
+ti.addEventListener('keydown',e=>{
+  if(e.key!=='Enter')return;
+  const v=ti.value.trim().toLowerCase();ti.value='';if(!v)return;
+  aP(v);
+  const fn=cmds[v]||(()=>[{c:'t-e',t:`Not found: ${v}. Type 'help'.`}]);
+  const lines=fn();
+  lines.forEach((l,i)=>setTimeout(()=>{aL(l.c,l.t);tb.scrollTop=tb.scrollHeight;},i*50));
+  setTimeout(()=>tb.scrollTop=tb.scrollHeight,lines.length*50+80);
+});
+
+// REVEAL
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}});
+},{threshold:.08,rootMargin:'0px 0px -20px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+// CTA
+function handleSubscribe(){
+  const em=document.getElementById('email-input').value;
+  const msg=document.getElementById('cta-msg');
+  if(!em||!em.includes('@')){msg.textContent='⚠ Valid email required.';msg.style.color='var(--red)';return;}
+  msg.textContent=`✓ Request submitted for ${em}. Bert will be in touch.`;
+  msg.style.color='var(--green)';
+  document.getElementById('email-input').value='';
+  document.getElementById('cta-name').value='';
+}
+</script>
+</body>
+</html>
